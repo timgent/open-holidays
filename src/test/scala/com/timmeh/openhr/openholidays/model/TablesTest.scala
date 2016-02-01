@@ -21,7 +21,6 @@ class TablesTest extends Specification {
       db.close()
       println("Done. Cleanup")
     }
-
   }
 
   val holidays = TableQuery[Holidays]
@@ -30,7 +29,7 @@ class TablesTest extends Specification {
     db.run(holidays.schema.create)
   }
 
-  def insertHoliday(db: Database): Future[Int] = db.run(holidays +=(101, 101, new java.sql.Date(2020, 11, 1), "Full", "Annual Leave"))
+  def insertHoliday(db: Database): Future[Int] = db.run(holidays += Holiday(101, 101, new java.sql.Date(2020, 11, 1), "Full", "Annual Leave"))
 
   "Creating a test schema should work" >> new Context {
     val numberOfTables = for {
@@ -43,7 +42,7 @@ class TablesTest extends Specification {
   "Inserting a holiday works" >> new Context {
     val insertCount = for {
       _ <- db.run(holidays.schema.create)
-      insertCount <- db.run(holidays +=(101, 101, new java.sql.Date(2020, 11, 1), "Full", "Annual Leave"))
+      insertCount <- insertHoliday(db)
     } yield insertCount
 
     Await.result(insertCount, Duration.Inf) must beEqualTo(1)
@@ -52,12 +51,12 @@ class TablesTest extends Specification {
     "Querying holidays table works" >> new Context {
       val resultsFuture = for {
         _ <- db.run(holidays.schema.create)
-        _ <- db.run(holidays +=(101, 101, new java.sql.Date(2020, 11, 1), "Full", "Annual Leave"))
+        _ <- insertHoliday(db)
         res <- db.run(holidays.result)
       } yield res
 
       val results = Await.result(resultsFuture, Duration.Inf)
       results.size must beEqualTo(1)
-      results.head._1 must beEqualTo(101)
+      results.head.id must beEqualTo(101)
     }
 }
