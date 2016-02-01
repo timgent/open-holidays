@@ -1,4 +1,4 @@
-package com.example
+package com.timmeh.openhr.openholidays
 
 import org.specs2.mutable.Specification
 import spray.testkit.Specs2RouteTest
@@ -7,8 +7,8 @@ import StatusCodes._
 
 class MyServiceSpec extends Specification with Specs2RouteTest with MyService {
   def actorRefFactory = system
-  
-  "MyService" should {
+
+  "Sample Tests" should {
 
     "return a greeting for GET requests to the root path" in {
       Get() ~> myRoute ~> check {
