@@ -1,4 +1,4 @@
-package com.example
+package com.timmeh.openhr.openholidays
 
 import akka.actor.Actor
 import spray.routing._
