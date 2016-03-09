@@ -1,9 +1,17 @@
 package com.timmeh.openhr.openholidays
 
 import akka.actor.Actor
+import com.timmeh.openhr.openholidays.model.{DB, HolidaysDAO, Holiday}
+import spray.http.StatusCodes.Success
 import spray.routing._
 import spray.http._
 import MediaTypes._
+import scala.concurrent.Await
+import scala.concurrent.ExecutionContext.Implicits.global
+import spray.json._
+import com.timmeh.openhr.openholidays.model.HolidaysJsonProtocol._
+
+import scala.concurrent.duration.Duration
 
 // we don't implement our route structure directly in the service actor because
 // we want to be able to test it independently, without having to spin up an actor
@@ -16,25 +24,33 @@ class MyServiceActor extends Actor with MyService {
   // this actor only runs our route, but you could add
   // other things here, like request stream processing
   // or timeout handling
-  def receive = runRoute(myRoute)
+  def receive = runRoute(holidays)
 }
 
 
 // this trait defines our service behavior independently from the service actor
-trait MyService extends HttpService {
+trait MyService extends HttpService with HolidaysDAO {
+  val db = DB.db
 
-  val myRoute =
-    path("") {
+  val holidays =
+    path("holidays" / "employees" / IntNumber) { employeeId =>
       get {
-        respondWithMediaType(`text/html`) { // XML is marshalled to `text/xml` by default, so we simply override here
-          complete {
-            <html>
-              <body>
-                <h1>Say hello to <i>spray-routing</i> on <i>spray-can</i>!</h1>
-              </body>
-            </html>
+        respondWithMediaType(`application/json`) {
+          onSuccess(getEmployeeHoliday(employeeId)) { employeeHols =>
+            complete(employeeHols.toJson.toString)
           }
         }
       }
-    }
+    } ~
+      path("holidays") {
+        post {
+          respondWithStatus(StatusCodes.OK) {
+            entity(as[Holiday]) { newHol =>
+              onSuccess(insertHoliday(newHol)) {numInserted =>
+                complete("Holiday successfully inserted")
+              }
+            }
+          }
+        }
+      }
 }
