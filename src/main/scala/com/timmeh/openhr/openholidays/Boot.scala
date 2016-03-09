@@ -11,7 +11,7 @@ import slick.driver.H2Driver.api._
 object Boot extends App {
 
   // DB setup
-  val db = Database.forConfig("h2mem1")
+  val db = Database.forConfig("holidaysdb")
 
   try {
     // we need an ActorSystem to host our application in

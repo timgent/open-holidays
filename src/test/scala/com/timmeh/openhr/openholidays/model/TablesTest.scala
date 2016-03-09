@@ -1,5 +1,6 @@
 package com.timmeh.openhr.openholidays.model
 
+import org.joda.time.DateTime
 import org.specs2.mutable.{After, Before, BeforeAfter, Specification}
 import slick.driver.H2Driver.api._
 import slick.jdbc.meta._
@@ -7,19 +8,15 @@ import slick.jdbc.meta._
 import scala.concurrent.duration.Duration
 import scala.concurrent.{ExecutionContext, Await, Future}
 import scala.util.{Failure, Success}
-import scala.concurrent.ExecutionContext.Implicits.global
-
 
 class TablesTest extends Specification {
 
   trait Context extends After {
     val dbName = s"test${util.Random.nextInt}"
     val db = Database.forURL(s"jdbc:h2:mem:$dbName", driver = "org.h2.Driver", keepAliveConnection = true)
-    println("Doing setup")
 
     def after: Any = {
       db.close()
-      println("Done. Cleanup")
     }
   }
 
@@ -29,14 +26,14 @@ class TablesTest extends Specification {
     db.run(holidays.schema.create)
   }
 
-  def insertHoliday(db: Database): Future[Int] = db.run(holidays += Holiday(101, 101, new java.sql.Date(2020, 11, 1), "Full", "Annual Leave"))
+  def insertHoliday(db: Database): Future[Int] = db.run(holidays += Holiday(101, 101, new DateTime(2020, 11, 1, 0, 0), "Full", "Annual Leave"))
 
   "Creating a test schema should work" >> new Context {
     val numberOfTables = for {
       _ <- createSchema(db)
       numberOfTables <- db.run(MTable.getTables).map(_.size)
     } yield numberOfTables
-    Await.result(numberOfTables, Duration.Inf) mustEqual (1)
+    Await.result(numberOfTables, Duration.Inf) mustEqual 1
   }
 
   "Inserting a holiday works" >> new Context {
@@ -45,7 +42,7 @@ class TablesTest extends Specification {
       insertCount <- insertHoliday(db)
     } yield insertCount
 
-    Await.result(insertCount, Duration.Inf) must beEqualTo(1)
+    Await.result(insertCount, Duration.Inf) mustEqual 1
   }
 
     "Querying holidays table works" >> new Context {
@@ -57,6 +54,6 @@ class TablesTest extends Specification {
 
       val results = Await.result(resultsFuture, Duration.Inf)
       results.size must beEqualTo(1)
-      results.head.id must beEqualTo(101)
+      results.head.id mustEqual 101
     }
 }
