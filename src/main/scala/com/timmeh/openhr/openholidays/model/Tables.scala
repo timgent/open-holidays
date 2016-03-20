@@ -20,3 +20,17 @@ class Holidays(tag: Tag)
   def * = (id, employeeId, holDate, holDayType, holType) <> (Holiday.tupled, Holiday.unapply)
   *
 }
+
+case class LeaveEntitlement(id: Int, employeeId: Int, leavePeriodStartDate: DateTime, leavePeriodEndDate: DateTime, leaveAllowance: Int)
+
+class LeaveEntitlements(tag: Tag)
+  extends Table[LeaveEntitlement](tag, "ENTITLEMENTS") {
+  def id = column[Int]("ID", O.PrimaryKey)
+  def employeeId = column[Int]("EMP_ID")
+  def leavePeriodStartDate = column[DateTime]("PERIOD_START_DATE")
+  def leavePeriodEndDate = column[DateTime]("PERIOD_END_DATE")
+  def leaveAllowance = column[Int]("ALLOWANCE")
+
+  def * = (id, employeeId, leavePeriodStartDate, leavePeriodEndDate, leaveAllowance) <> (LeaveEntitlement.tupled, LeaveEntitlement.unapply)
+  *
+}
