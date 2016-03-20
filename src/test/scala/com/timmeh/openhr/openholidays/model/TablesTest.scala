@@ -1,5 +1,6 @@
 package com.timmeh.openhr.openholidays.model
 
+import com.timmeh.openhr.openholidays.utils.TestDBContext
 import org.joda.time.DateTime
 import org.specs2.mutable.{After, Before, BeforeAfter, Specification}
 import slick.driver.H2Driver.api._
@@ -11,32 +12,31 @@ import scala.util.{Failure, Success}
 
 class TablesTest extends Specification {
 
-  trait Context extends After {
-    val dbName = s"test${util.Random.nextInt}"
-    val db = Database.forURL(s"jdbc:h2:mem:$dbName", driver = "org.h2.Driver", keepAliveConnection = true)
-
-    def after: Any = {
-      db.close()
-    }
-  }
-
   val holidays = TableQuery[Holidays]
+  val leaveEntitlements = TableQuery[LeaveEntitlements]
 
   def createSchema(db: Database) = {
-    db.run(holidays.schema.create)
+    val schemas = holidays.schema ++ leaveEntitlements.schema
+    db.run(schemas.create)
   }
 
   def insertHoliday(db: Database): Future[Int] = db.run(holidays += Holiday(101, 101, new DateTime(2020, 11, 1, 0, 0), "Full", "Annual Leave"))
 
-  "Creating a test schema should work" >> new Context {
+  def insertLeaveEntitlement(db: Database): Future[Int] = {
+    val startDate: DateTime = new DateTime(2016, 11, 1, 0, 0)
+    val endDate = startDate.plusYears(1).minusDays(1)
+    db.run(leaveEntitlements += LeaveEntitlement(11, 1, startDate, endDate, 25))
+  }
+
+  "Creating a test schema should work" >> new TestDBContext {
     val numberOfTables = for {
       _ <- createSchema(db)
       numberOfTables <- db.run(MTable.getTables).map(_.size)
     } yield numberOfTables
-    Await.result(numberOfTables, Duration.Inf) mustEqual 1
+    Await.result(numberOfTables, Duration.Inf) mustEqual 2
   }
 
-  "Inserting a holiday works" >> new Context {
+  "Inserting a holiday works" >> new TestDBContext {
     val insertCount = for {
       _ <- db.run(holidays.schema.create)
       insertCount <- insertHoliday(db)
@@ -45,7 +45,7 @@ class TablesTest extends Specification {
     Await.result(insertCount, Duration.Inf) mustEqual 1
   }
 
-    "Querying holidays table works" >> new Context {
+    "Querying holidays table works" >> new TestDBContext {
       val resultsFuture = for {
         _ <- db.run(holidays.schema.create)
         _ <- insertHoliday(db)
@@ -56,4 +56,27 @@ class TablesTest extends Specification {
       results.size must beEqualTo(1)
       results.head.id mustEqual 101
     }
+
+    "Inserting a leave entitlement works" >> new TestDBContext {
+    val insertCount = for {
+      _ <- db.run(leaveEntitlements.schema.create)
+      insertCount <- insertLeaveEntitlement(db)
+    } yield insertCount
+
+    Await.result(insertCount, Duration.Inf) mustEqual 1
+  }
+
+    "Querying the leave entitlements table works" >> new TestDBContext {
+      val resultsFuture = for {
+        _ <- db.run(leaveEntitlements.schema.create)
+        _ <- insertLeaveEntitlement(db)
+        res <- db.run(leaveEntitlements.result)
+      } yield res
+
+      val results = Await.result(resultsFuture, Duration.Inf)
+      results.size must beEqualTo(1)
+      results.head.id mustEqual 11
+    }
+
+
 }
