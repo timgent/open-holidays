@@ -1,3 +1,4 @@
+[![Build Status](https://travis-ci.org/timgent/open-holidays.svg?branch=master)](https://travis-ci.org/timgent/open-holidays)
 ## Open Holidays
 
 Intended as a microservice for handling employee annual leave, built with Scala, Spray, and Slick.
