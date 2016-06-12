@@ -15,23 +15,26 @@ import scala.concurrent.duration.Duration
 
 // we don't implement our route structure directly in the service actor because
 // we want to be able to test it independently, without having to spin up an actor
-class MyServiceActor extends Actor with MyService {
+class MyServiceActor extends Actor {
+  val holidaysService = new HolidaysService with HolidaysDAO with LeaveEntitlementsDAO {
+    val db = DB.db
+    def actorRefFactory = context
+  }
 
   // the HttpService trait defines only one abstract member, which
   // connects the services environment to the enclosing actor or test
-  def actorRefFactory = context
 
   // this actor only runs our route, but you could add
   // other things here, like request stream processing
   // or timeout handling
-  def receive = runRoute(holidays)
+  def receive = holidaysService.runRoute(holidaysService.holidays)
 }
 
 
 // this trait defines our service behavior independently from the service actor
 // TODO: Check out dependency injection options so I don't create this monster trait that contains the whole world
-trait MyService extends HttpService with HolidaysDAO with LeaveEntitlementsDAO {
-  val db = DB.db
+trait HolidaysService extends HttpService {
+  this: HolidaysDAO with LeaveEntitlementsDAO =>
 
 //  TODO: These are getting messy, extract the detail out into Controllers
   val holidays =

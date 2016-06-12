@@ -9,7 +9,7 @@ import com.github.tototoshi.slick.H2JodaSupport._
 
 
 trait HolidaysDAO {
-  val db: Database
+  def db: Database
   val holidaysTable = TableQuery[Holidays]
 
   def getEmployeeHolidays(employeeId: Int): Future[Seq[Holiday]] = {
