@@ -5,21 +5,16 @@ import spray.httpx.SprayJsonSupport
 import spray.json._
 
 object HolidaysJsonProtocol extends DefaultJsonProtocol with SprayJsonSupport {
-  implicit object ColorJsonFormat extends RootJsonFormat[Holiday] {
-    def write(hol: Holiday) = JsObject(
-      "id" -> JsNumber(hol.id),
-      "employeeId" -> JsNumber(hol.employeeId),
-      "holDate" -> JsString(hol.holDate.toString),
-      "holDayType" -> JsString(hol.holDayType),
-      "holType" -> JsString(hol.holType)
-    )
+  implicit object JodaDateTimeJsonFormat extends RootJsonFormat[DateTime] {
+    def write(dateTime: DateTime) = JsString(dateTime.toString)
 
-    def read(value: JsValue) = {
-      value.asJsObject.getFields("id", "employeeId", "holDate", "holDayType", "holType") match {
-        case Seq(JsNumber(id), JsNumber(employeeId), JsString(holDate), JsString(holDayType), JsString(holType)) =>
-          Holiday(id.toInt, employeeId.toInt, new DateTime(holDate), holDayType, holType)
-        case _ => throw new DeserializationException("Color expected")
-      }
+    def read(dateTime: JsValue) = dateTime match {
+      case JsString(dt) => new DateTime(dt)
+      case _ => throw new DeserializationException("DateTime expected")
     }
   }
+
+  implicit val holidaysJsonFormat = jsonFormat5(Holiday)
+  implicit val leaveEntitlementsFormat = jsonFormat5(LeaveEntitlement)
+  implicit val holidaysResponseFormat = jsonFormat2(HolidaysResponse)
 }

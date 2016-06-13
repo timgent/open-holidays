@@ -1,7 +1,8 @@
 package com.timmeh.openhr.openholidays
 
 import akka.actor.Actor
-import com.timmeh.openhr.openholidays.model.{LeaveEntitlementsDAO, DB, HolidaysDAO, Holiday}
+import com.timmeh.openhr.openholidays.controller.HolidaysController
+import com.timmeh.openhr.openholidays.model._
 import spray.http.StatusCodes.Success
 import spray.routing._
 import spray.http._
@@ -15,8 +16,8 @@ import scala.concurrent.duration.Duration
 
 // we don't implement our route structure directly in the service actor because
 // we want to be able to test it independently, without having to spin up an actor
-class MyServiceActor extends Actor {
-  val holidaysService = new HolidaysService with HolidaysDAO with LeaveEntitlementsDAO {
+class HolidaysServiceActor extends Actor {
+  val holidaysService = new HolidaysService with HolidaysController with HolidaysDAO with LeaveEntitlementsDAO {
     val db = DB.db
     def actorRefFactory = context
   }
@@ -34,7 +35,7 @@ class MyServiceActor extends Actor {
 // this trait defines our service behavior independently from the service actor
 // TODO: Check out dependency injection options so I don't create this monster trait that contains the whole world
 trait HolidaysService extends HttpService {
-  this: HolidaysDAO with LeaveEntitlementsDAO =>
+  this: HolidaysDAO with LeaveEntitlementsDAO with HolidaysController =>
 
 //  TODO: These are getting messy, extract the detail out into Controllers
   val holidays =
@@ -42,13 +43,9 @@ trait HolidaysService extends HttpService {
       get {
         parameters("leave-year") { leaveYear =>
           respondWithMediaType(`application/json`) {
-            onSuccess(getEmployeeLeaveEntitlement(employeeId, new DateTime(leaveYear))) {
-              case None => complete("No employee data found for the given year")
-              case Some(leaveEntitlement) => {
-                onSuccess(getEmployeeHolidays(employeeId, leaveEntitlement.leavePeriodStartDate, leaveEntitlement.leavePeriodEndDate)) { employeeHols =>
-                  complete(employeeHols.toJson.toString)
-                }
-              }
+            onSuccess(holsAndCurrentLeaveYearForEmployee(new DateTime(leaveYear), employeeId)) {
+              case res@HolidaysResponse(Some(leaveEntitlement), _) => complete(res)
+              case HolidaysResponse(None, _) => complete("No leave year data for this period")
             }
           }
         } ~
