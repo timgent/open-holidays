@@ -1,6 +1,7 @@
 package com.timmeh.openhr.openholidays
 
 import akka.serialization.Serialization
+import com.timmeh.openhr.openholidays.controller.HolidaysController
 import com.timmeh.openhr.openholidays.model._
 import com.timmeh.openhr.openholidays.utils.TestDBContextWithSchemas
 import org.specs2.mutable.{BeforeAfter, After, Before, Specification}
@@ -21,12 +22,12 @@ import scala.concurrent.duration.Duration
 import scala.concurrent.{Await, Future}
 
 
-class MyServiceSpec extends Specification with Specs2RouteTest {
+class HolidaysServiceSpec extends Specification with Specs2RouteTest {
 
   trait Context extends BeforeAfter {
     val testDB = TestDB.db
 
-    val holidaysService = new HolidaysService with HolidaysDAO with LeaveEntitlementsDAO {
+    val holidaysService = new HolidaysService with HolidaysController with HolidaysDAO with LeaveEntitlementsDAO {
       val db = testDB
       def actorRefFactory = system
     }
@@ -48,6 +49,7 @@ class MyServiceSpec extends Specification with Specs2RouteTest {
 
   "Annual leave get endpoint" should {
     "return all the holidays for the given employee" in new Context {
+//    Not actually sure that this is required
       val hol = new Holiday(1, 1, new DateTime(2016, 11, 1, 0, 0), "PM", "Annual Leave")
       Await.result(testDAOsForSetup.insertHoliday(hol), Duration.Inf)
 
@@ -60,6 +62,8 @@ class MyServiceSpec extends Specification with Specs2RouteTest {
 
   "Annual leave get endpoint" should {
     "return all the holidays for the given employee in the given leave year (leave year the date is in should be used)" in new Context {
+//      As a user I want to see all of my booked holidays for the current year so I know when I will be on leave
+
       //      Given I have the following holidays in the database
       val hol1 = new Holiday(1, 1, new DateTime(2016, 11, 1, 0, 0), "PM", "Annual Leave")
       val hol2 = new Holiday(2, 1, new DateTime(2016, 11, 2, 0, 0), "PM", "Annual Leave")
@@ -76,10 +80,13 @@ class MyServiceSpec extends Specification with Specs2RouteTest {
 
       //      Then when I look for holidays for that employee for that leave year, only the correct results are returned
       Get("/holidays/employees/1?leave-year=2016-10-01") ~> holidaysService.holidays ~> check {
-        val returnedHolidays = responseAs[String].parseJson.convertTo[Seq[Holiday]]
+        val holidaysResponse = responseAs[String].parseJson.convertTo[HolidaysResponse]
+        val returnedHolidays = holidaysResponse.holidays
+        val leaveEntitlement = holidaysResponse.leaveEntitlement.get
         returnedHolidays.size mustEqual 2
         returnedHolidays.filter(_.id == 1).head mustEqual hol1
         returnedHolidays.filter(_.id == 2).head mustEqual hol2
+        leaveEntitlement mustEqual entitlement1
       }
     }
   }
