@@ -6,7 +6,7 @@ Intended as a microservice for handling employee annual leave, built with Scala,
 In the early stages of development....
 
 
-### Running the application
+### Running the application with sbt
 Follow these steps to get started:
 
 1. Git-clone this repository.
@@ -34,3 +34,13 @@ Follow these steps to get started:
 7. Stop the application:
 
         > re-stop
+
+### Building and running the application with Docker
+
+1. Build the application jar
+
+        > ./build.sh
+        
+2. Run the application
+
+        > docker build -t open-holidays . && docker run -t -p 8080:8080 open-holidays

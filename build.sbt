@@ -5,7 +5,7 @@ lazy val commonSettings = Seq(
   organization := "com.example"
 )
 
-lazy val root = (project in file(".")).settings(
+lazy val openholidays = (project in file(".")).settings(
   version := "0.1",
   scalaVersion := "2.11.7",
   scalacOptions := Seq("-unchecked", "-deprecation", "-encoding", "utf8"),
